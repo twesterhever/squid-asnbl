@@ -117,7 +117,11 @@ class SockServ(object):
             # Discard invalid input from client (too long, too short, garbarge, no IPv4/IPv6 address, ...)
             if not ipobject or not isinstance(ipobject, (ipaddress.IPv4Address, ipaddress.IPv6Address)):
                 LOGIT.warning("Discarding invalid input (%s bytes) from client...", len(data))
-                client.send("Invalid input received.\n".encode('utf-8'))
+                try:
+                    client.send("Invalid input received.\n".encode('utf-8'))
+                except BrokenPipeError:
+                    # Client has closed connection by now, do not throw an error here...
+                    pass
 
                 # Destroy buffers...
                 del data
