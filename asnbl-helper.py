@@ -22,6 +22,11 @@ import dns.resolver
 # Define constants and settings...
 # Path to Unix socket provided by asn-lookup [.py]
 SOCKETPATH = "temp.sock"
+# How many different ASNs per destination are acceptable?
+ASDIVERSITYTHRESHOLD = 5
+# Respond with "OK" for destinations whose ASNs exceed given
+# threshold (useful for simple Fast Flux mitigation)?
+BLOCKDIVERSITYEXCEEDINGDST = False
 # List of IP/ASN tuples for socket testing purposes
 # TODO: Add IPv6 testing data...
 TESTDATA = [("8.8.8.8", 15169),
@@ -200,6 +205,22 @@ while True:
 
     # TODO: Debugging code, remove afterwards...
     print(ASNS)
+
+    # Primitive Fast Flux mitigation: If a destination resolves to
+    # different IP addresses within too many different ASNs (normally 1-3),
+    # it may be considered as C&C/Fast Flux domain.
+    #
+    # Depending on the configuration set at the beginning of this
+    # script, this is ignored or access will be denied.
+    if len(ASNS) > ASDIVERSITYTHRESHOLD:
+        LOGIT.warning("Destination '%s' exceeds ASN diversity threshold (%s > %s), possibly Fast Flux: %s",
+                      QUERYSTRING, len(ASNS), ASDIVERSITYTHRESHOLD, ASNS)
+
+        if BLOCKDIVERSITYEXCEEDINGDST:
+            LOGIT.info("Denying access to possible Fast Flux destination '%s'",
+                       QUERYSTRING)
+            print("OK")
+            continue
 
     # Query enumerated ASNs against specified black-/whitelist sources...
     
