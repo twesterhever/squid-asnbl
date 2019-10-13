@@ -22,6 +22,14 @@ import dns.resolver
 # Define constants and settings...
 # Path to Unix socket provided by asn-lookup [.py]
 SOCKETPATH = "temp.sock"
+# List of IP/ASN tuples for socket testing purposes
+# TODO: Add IPv6 testing data...
+TESTDATA = [("8.8.8.8", 15169),
+            ("10.0.0.1", 0),
+            ("127.0.0.1", 0),
+            ("2606:4700:10::6814:d673", 13335),
+            ("fe80::1", 0)]
+
 
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('squid-asnbl-helper')
@@ -139,6 +147,20 @@ RESOLVER.timeout = 2
 # Establish connection to ASN lookup socket...
 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 sock.connect(SOCKETPATH)
+
+# Check if ASN lookup script returns valid data...
+LOGIT.debug("Connected to asn-lookup [.py] socket, running response tests...")
+for ipasntuple in TESTDATA:
+    sock.send(str(ipasntuple[0]).encode('utf-8'))
+    returndata = int(sock.recv(64))
+
+    if returndata != ipasntuple[1]:
+        LOGIT.error("Response test failed for asn-lookup [.py] socket (tuple: %s), aborting",
+                    ipasntuple)
+        print("BH")
+        sys.exit(127)
+
+LOGIT.info("asn-lookup [.py] socket operational - excellent. Waiting for input...")
 
 # Read domains or IP addresses from STDIN in a while loop, resolve IP
 # addresses if necessary, and do ASN lookups against specified socket for
