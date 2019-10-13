@@ -121,27 +121,95 @@ def resolve_addresses(domain: str):
     return ips
 
 
+def check_asn_against_list(asn: int, asnlist=None):
+    """ Function call: check_asn_against_list(ASN to be checked, list of ASNs to match against [if any])
+    This takes a enumerated ASN - integer only, without the "AS"
+    prefix commonly used -, and performs a lookup either against
+    a DNS-based ASNBL/ASNWL or a static list. If the latter is used, a
+    list of ASNs to match against - probably read from a file - is
+    expected.
+
+    This function returns True if an ASN matches, an False if not. """
+
+    fqfailed = True
+
+    if ASNBLDOMAIN:
+        # Running in DNS mode...
+        for asnbldom in ASNBLDOMAIN:
+            try:
+                answer = RESOLVER.query((str(asn) + "." + asnbldom), 'A')
+            except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+                fqfailed = True
+            else:
+                fqfailed = False
+
+                # Concatenate responses and log them...
+                responses = ""
+                for rdata in answer:
+                    responses = responses + str(rdata) + " "
+
+                LOGIT.warning("ASNBL hit on '%s.%s' with response '%s'",
+                              asn, asnbldom, responses.strip())
+
+                break
+    else:
+        # Running in static list mode...
+        if asn in asnlist:
+            fqfailed = False
+
+            LOGIT.warning("ASNBL hit on '%s', found in given ASN list",
+                          asn)
+
+    # If any of the queries made above was successful, return True
+    if fqfailed:
+        return False
+
+    return True
+
+
 # Abort if no arguments are given...
 try:
     if not sys.argv[1]:
         print("BH")
         sys.exit(127)
 except IndexError:
-    print("Usage: " + sys.argv[0] + " ASNBL1 ASNBL2 ASNBLn")
+    print("Usage: " + sys.argv[0] + " ASNBL1 ASNBL2 ASNBLn (each FQDN or path to files)")
+    print("Please make sure general settings (path to asn-lookup [.py] socket, et al.) are set correctly.")
     sys.exit(127)
 
 # Test if given arguments are paths or FQDNs...
 ASNBLDOMAIN = []
 ASNBLFILE = []
+ASNLIST = []
 
 for targument in sys.argv[1:]:
-    if is_valid_domain(targument):
-        ASNBLDOMAIN.append(targument.strip(".") + ".")
-    elif os.path.exists(targument):
+    if os.path.exists(targument):
         ASNBLFILE.append(targument)
+    elif is_valid_domain(targument):
+        ASNBLDOMAIN.append(targument.strip(".") + ".")
     else:
         print("BH")
         sys.exit(127)
+
+# We do not support both DNS and file mode at the same time. If
+# it is desired, please consider running two instances of this helper.
+if ASNBLDOMAIN and ASNBLFILE:
+    print("BH")
+    sys.exit(127)
+elif ASNBLFILE:
+    for singlefile in ASNBLFILE:
+        with open(singlefile, "r") as f:
+            fbuffer = f.read().splitlines()
+
+            # Convert list entries (usually strings like "ASxxx") into integers
+            for singleline in fbuffer:
+                # Ignore comments begnning with # or ; (BIND syntax)...
+                if not (singleline.startswith("#") or singleline.startswith(";")):
+                    parsed = int(singleline.strip("AS").split()[0])
+
+                    ASNLIST.append(parsed)
+
+    LOGIT.info("Successfully read supplied ASN lists, %s entries by now", len(ASNLIST))
 
 # Set up resolver object
 RESOLVER = dns.resolver.Resolver()
@@ -224,6 +292,14 @@ while True:
             continue
 
     # Query enumerated ASNs against specified black-/whitelist sources...
-    
+    qfailed = True
+    for singleasn in ASNS:
+        if check_asn_against_list(singleasn, ASNLIST):
+            qfailed = False
+            print("OK")
+            break
+
+    if qfailed:
+        print("ERR")
 
 # EOF
