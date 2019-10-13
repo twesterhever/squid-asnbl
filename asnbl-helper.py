@@ -196,14 +196,15 @@ while True:
     for singleip in IPS:
         try:
             sock.send(str(singleip).encode('utf-8'))
-            buf = sock.recv(64)
+            returnasn = int(sock.recv(64))
 
-            ASNS.append(int(buf))
+            # Do not append failed lookup results (ASN = 0 or empty) or duplicate entries...
+            if returnasn and returnasn > 0 and returnasn not in ASNS:
+                ASNS.append(returnasn)
         except BrokenPipeError:
             print("BH")
             break
 
-    # TODO: Debugging code, remove afterwards...
     print(ASNS)
 
     # Primitive Fast Flux mitigation: If a destination resolves to
