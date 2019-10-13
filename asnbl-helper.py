@@ -93,7 +93,7 @@ def resolve_addresses(domain: str):
     try:
         for resolvedip in RESOLVER.query(domain, 'AAAA'):
             ip6a.append(str(resolvedip))
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
         pass
 
     # enumerate IPv4 addresses...
@@ -101,7 +101,7 @@ def resolve_addresses(domain: str):
     try:
         for resolvedip in RESOLVER.query(domain, 'A'):
             ip4a.append(str(resolvedip))
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
         pass
 
     # assemble all IP addresses and return them back
