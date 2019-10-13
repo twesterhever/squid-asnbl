@@ -21,10 +21,13 @@ import sys
 import threading
 import pyasn
 
-# Define constants...
+# Define constants and settings...
+# Path to Unix socket provided by this script
 SOCKETPATH = "temp.sock"
+# TODO
 SOCKETPERMISSIONS = 0o1130
-ASNDBPATH = "/home/user/ipasn_20191002.dat"
+# Path to ASN database to be used
+ASNDBPATH = "ipasn_20191002.dat"
 
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('asn-lookup')
