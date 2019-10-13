@@ -19,10 +19,9 @@ import socket
 import sys
 import dns.resolver
 
-# Define constants... (ASNLIST may contain a path to an ASN black-/whitelist
-# file, or a FQDN for DNSBL usage)
+# Define constants and settings...
+# Path to Unix socket provided by asn-lookup [.py]
 SOCKETPATH = "temp.sock"
-ASNLIST = sys.argv[1]
 
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('squid-asnbl-helper')
