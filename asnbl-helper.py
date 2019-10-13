@@ -118,7 +118,7 @@ except IndexError:
     print("Usage: " + sys.argv[0] + " ASNBL1 ASNBL2 ASNBLn")
     sys.exit(127)
 
-# Test if given arguments are paths or FQDNs....
+# Test if given arguments are paths or FQDNs...
 ASNBLDOMAIN = []
 ASNBLFILE = []
 
