@@ -255,6 +255,11 @@ while True:
         IPS = [QUERYSTRING]
     elif is_valid_domain(QUERYSTRING):
         IPS = resolve_addresses(QUERYSTRING)
+
+        # Test if any IP address was successfully resolved for given destination...
+        if not IPS:
+            print("BH")
+            continue
     else:
         print("BH")
         continue
