@@ -278,10 +278,8 @@ while True:
             print("BH")
             break
 
-    print(ASNS)
-
     # Primitive Fast Flux mitigation: If a destination resolves to
-    # different IP addresses within too many different ASNs (normally 1-3),
+    # different IP addresses within too many different ASNs (normally 1-4),
     # it may be considered as C&C/Fast Flux domain.
     #
     # Depending on the configuration set at the beginning of this
