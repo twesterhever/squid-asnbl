@@ -28,7 +28,9 @@ SOCKETPATH = "/tmp/squid-asnbl.sock"
 # File permissions of socket (default: 660)
 SOCKETPERMISSIONS = stat.S_IWUSR | stat.S_IRUSR | stat.S_IWGRP | stat.S_IRGRP
 # Path to ASN database to be used
-ASNDBPATH = "ipasn_20191002.dat"
+ASNDBPATH = "/opt/squid-asnbl/asndb-current.dat"
+
+ASNDB = None
 
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('asn-lookup')
@@ -42,13 +44,21 @@ else:
 LOGIT.addHandler(HANDLER)
 
 
-def load_asndb():
-    """ Function call: load_asndb() """
+def load_asndb(context=None, psignal=None):
+    """ Function call: load_asndb()
 
-    asndb = pyasn.pyasn(ASNDBPATH)
-    LOGIT.debug("ASN database set up with object '%s'", asndb)
+    This reads the ASN database from given file location, and overwrites
+    database object in ASNDB, if any. It will also be called on receiving
+    SIGHUP, where it rereads the database again. """
 
-    return asndb
+    if context or psignal:
+        LOGIT.info("Received %s from %s, reloading ASN database...", psignal, context)
+
+    # pylint does not like this, but there does not seem to be a better
+    # and more robust way... :-/
+    global ASNDB
+    ASNDB = pyasn.pyasn(ASNDBPATH)
+    LOGIT.debug("ASN database set up with object '%s'", ASNDB)
 
 
 class SockServ(object):
@@ -154,11 +164,11 @@ class SockServ(object):
                 client.send(str(asn).encode('utf-8'))
 
 
+# Initially load ASN database, so the script can handle queries straight away...
+load_asndb()
+
 # Reload ASN DB on SIGHUP...
 signal.signal(signal.SIGHUP, load_asndb)
-
-# Initially load ASN database, so the script can handle queries straight away...
-ASNDB = load_asndb()
 
 # Call socket object for processing helper queries
 try:
