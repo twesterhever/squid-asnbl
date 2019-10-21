@@ -99,7 +99,8 @@ class SockServ(object):
         This function receives IP addresses from a client, enumerates the corresponding
         Autonomous System Number (ASN) and returns it, if any. """
 
-        LOGIT.debug("handleclient(): got connection from client '%s' with address '%s'", client, addr)
+        LOGIT.debug("handleclient(): got connection from client '%s' with address '%s'",
+                    client, addr)
 
         # A completely exploded IPv6 address is 39 bytes long, so setting
         # buffer size to 40 bytes should be enough...
@@ -132,7 +133,7 @@ class SockServ(object):
             else:
                 ipobject = ""
 
-            # Discard invalid input from client (too long, too short, garbarge, no IPv4/IPv6 address, ...)
+            # Discard invalid input (too long/short, garbarge, no IPv4/IPv6 address, ...)
             if not ipobject or not isinstance(ipobject, (ipaddress.IPv4Address, ipaddress.IPv6Address)):
                 LOGIT.warning("Discarding invalid input (%s bytes) from client...", len(data))
                 try:
