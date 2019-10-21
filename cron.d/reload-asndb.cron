@@ -1,0 +1,2 @@
+MAILTO=""
+25 01 * * * to-be-defined /opt/squid-asnbl/reload_asndb
