@@ -17,15 +17,16 @@ import logging.handlers
 import os.path
 import signal
 import socket
+import stat
 import sys
 import threading
 import pyasn
 
 # Define constants and settings...
 # Path to Unix socket provided by this script
-SOCKETPATH = "temp.sock"
-# TODO
-SOCKETPERMISSIONS = 0o1130
+SOCKETPATH = "/tmp/squid-asnbl.sock"
+# File permissions of socket (default: 660)
+SOCKETPERMISSIONS = stat.S_IWUSR | stat.S_IRUSR | stat.S_IWGRP | stat.S_IRGRP
 # Path to ASN database to be used
 ASNDBPATH = "ipasn_20191002.dat"
 
@@ -60,9 +61,13 @@ class SockServ(object):
             LOGIT.info("Deleting orphaned socket file...")
             os.remove(SOCKETPATH)
 
-        LOGIT.debug("Settting up Unix socket @ '%s'  with permissions '%s' ...", SOCKETPATH, SOCKETPERMISSIONS)
+        LOGIT.debug("Settting up Unix socket @ '%s'  with permissions '%s' ...",
+                    SOCKETPATH, SOCKETPERMISSIONS)
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.bind(SOCKETPATH)
+
+        # Set permissions as configured above...
+        os.chmod(SOCKETPATH, SOCKETPERMISSIONS)
         self.sock.listen()
 
         LOGIT.debug("Successfully created socket, good, now waiting for queries...")
