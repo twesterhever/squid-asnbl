@@ -22,7 +22,8 @@ import sys
 import threading
 import pyasn
 
-# Define constants and settings...
+# *** Define constants and settings... ***
+
 # Path to Unix socket provided by this script
 SOCKETPATH = "/tmp/squid-asnbl.sock"
 # File permissions of socket (default: 660)

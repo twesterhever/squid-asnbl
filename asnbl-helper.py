@@ -19,9 +19,10 @@ import socket
 import sys
 import dns.resolver
 
-# Define constants and settings...
+# *** Define constants and settings... ***
+
 # Path to Unix socket provided by asn-lookup [.py]
-SOCKETPATH = "temp.sock"
+SOCKETPATH = "/tmp/squid-asnbl.sock"
 # How many different ASNs per destination are acceptable?
 ASDIVERSITYTHRESHOLD = 5
 # Respond with "OK" for destinations whose ASNs exceed given
@@ -66,22 +67,22 @@ def is_valid_domain(chkdomain: str):
     unspecified characters. It returns True if a domain was valid,
     and False if not."""
 
-    # test if chkdomain is an IP address (should not happen here)
+    # Test if chkdomain is an IP address (should not happen here)
     if is_ipaddress(chkdomain):
         return False
 
-    # allowed characters
+    # Allowed characters
     allowedchars = re.compile(r"(?!-)[a-z\d\-\_]{1,63}(?<!-)$", re.IGNORECASE)
 
     if len(chkdomain) > 255 or "." not in chkdomain:
-        # do not allow domains which are very long or do not contain a dot
+        # Do not allow domains which are very long or do not contain a dot
         return False
 
     if chkdomain[-1] == ".":
-        # strip trailing "." if present
+        # Strip trailing "." if present
         chkdomain = chkdomain[:-1]
 
-    # check if sublabels are invalid (i.e. are empty, too long or contain
+    # Check if sublabels are invalid (i.e. are empty, too long or contain
     # invalid characters)
     for sublabel in chkdomain.split("."):
         if not sublabel or not allowedchars.match(sublabel):
@@ -96,11 +97,11 @@ def resolve_addresses(domain: str):
     This function takes a domain and enumerates all IPv4 and IPv6
     records for it. They are returned as an array."""
 
-    # check if this is a valid domain...
+    # Check if this is a valid domain...
     if not is_valid_domain(domain):
         return None
 
-    # enumerate IPv6 addresses...
+    # Enumerate IPv6 addresses...
     ip6a = []
     try:
         for resolvedip in RESOLVER.query(domain, 'AAAA'):
@@ -108,7 +109,7 @@ def resolve_addresses(domain: str):
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
         pass
 
-    # enumerate IPv4 addresses...
+    # Enumerate IPv4 addresses...
     ip4a = []
     try:
         for resolvedip in RESOLVER.query(domain, 'A'):
@@ -116,7 +117,7 @@ def resolve_addresses(domain: str):
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
         pass
 
-    # assemble all IP addresses and return them back
+    # Assemble all IP addresses and return them back
     ips = ip6a + ip4a
     return ips
 
