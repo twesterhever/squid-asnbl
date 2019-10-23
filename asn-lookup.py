@@ -104,8 +104,8 @@ class SockServ(object):
                     client, addr)
 
         # A completely exploded IPv6 address is 39 bytes long, so setting
-        # buffer size to 40 bytes should be enough...
-        bufsize = 40
+        # buffer size to 41 bytes (39 + 2 for CRLF) should be enough...
+        bufsize = 41
 
         while True:
             # Read data from client and clean it up afterwards (no trailing newline, decoded)
