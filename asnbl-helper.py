@@ -86,7 +86,7 @@ def is_valid_domain(chkdomain: str):
     # invalid characters)
     for sublabel in chkdomain.split("."):
         if not sublabel or not allowedchars.match(sublabel):
-            # sublabel is invalid
+            # Sublabel is invalid
             return False
 
     return True
