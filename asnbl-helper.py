@@ -127,6 +127,29 @@ def resolve_addresses(domain: str):
     return ips
 
 
+def load_asnbl_file(filepath: str):
+    """ Function call: load_asnbl_file(/Path/to/single/ASNBL/file)
+
+    This reads given filename, strips out comments beginning with # or ; ,
+    and returns a list of parsed ASNs."""
+
+    with open(filepath, "r") as fhandle:
+        fbuffer = fhandle.read().splitlines()
+
+    # Temporary variable to hold list of parsed ASNs from file
+    parsedasns = []
+
+    # Convert list entries (usually strings like "ASxxx") into integers
+    for singleline in fbuffer:
+        # Ignore comments begnning with # or ; (BIND syntax)...
+        if not (singleline.startswith("#") or singleline.startswith(";")):
+            parsed = int(singleline.strip("AS").split()[0])
+
+            parsedasns.append(parsed)
+
+    return parsedasns
+
+
 def check_asn_against_list(asn: int, asnlist=None):
     """ Function call: check_asn_against_list(ASN to be checked, list of ASNs to match against [if any])
     This takes a enumerated ASN - integer only, without the "AS"
@@ -204,16 +227,7 @@ if ASNBLDOMAIN and ASNBLFILE:
     sys.exit(127)
 elif ASNBLFILE:
     for singlefile in ASNBLFILE:
-        with open(singlefile, "r") as f:
-            fbuffer = f.read().splitlines()
-
-            # Convert list entries (usually strings like "ASxxx") into integers
-            for singleline in fbuffer:
-                # Ignore comments begnning with # or ; (BIND syntax)...
-                if not (singleline.startswith("#") or singleline.startswith(";")):
-                    parsed = int(singleline.strip("AS").split()[0])
-
-                    ASNLIST.append(parsed)
+        ASNLIST.extend(load_asnbl_file(singlefile))
 
     LOGIT.info("Successfully read supplied ASN lists, %s entries by now", len(ASNLIST))
 
