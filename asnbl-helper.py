@@ -302,6 +302,11 @@ while True:
             print("BH")
             break
 
+    # Return BH if no ASNs were enumerated by the for loop above...
+    if not ASNS:
+        print("BH")
+        continue
+
     # Primitive Fast Flux mitigation: If a destination resolves to
     # different IP addresses within too many different ASNs (normally 1-4),
     # it may be considered as C&C/Fast Flux domain.
