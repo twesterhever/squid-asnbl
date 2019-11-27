@@ -186,8 +186,8 @@ def check_asn_against_list(asn: int, asnlist=None):
         if asn in asnlist:
             fqfailed = False
 
-            LOGIT.warning("ASNBL hit on '%s', found in given ASN list",
-                          asn)
+            LOGIT.warning("ASNBL hit on '%s', found in given ASN list (queried destination: '%s')",
+                          asn, querystring)
 
     # If any of the queries made above was successful, return True
     if fqfailed:
@@ -317,7 +317,7 @@ while True:
     # Query enumerated ASNs against specified black-/whitelist sources...
     qfailed = True
     for singleasn in ASNS:
-        if check_asn_against_list(singleasn, ASNLIST):
+        if check_asn_against_list(singleasn, QUERYSTRING, ASNLIST):
             qfailed = False
             print("OK")
             break
