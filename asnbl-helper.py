@@ -31,8 +31,10 @@ BLOCKDIVERSITYEXCEEDINGDST = False
 # List of IP/ASN tuples for socket testing purposes
 TESTDATA = [("1.1.1.1", 13335),
             ("8.8.8.8", 15169),
+            ("194.95.245.140", 680),
             ("10.0.0.1", 0),
             ("127.0.0.1", 0),
+            ("2001:638:d:c102::140", 680),
             ("2606:4700:10::6814:d673", 13335),
             ("fe80::1", 0)]
 
