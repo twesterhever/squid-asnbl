@@ -143,15 +143,11 @@ class SockServ(object):
                     # Client has closed connection by now, do not throw an error here...
                     pass
 
-                # Destroy buffers...
+                # Destroy buffers and skip further procession of this input...
                 del data
                 del cleanstring
                 del ipobject
-
-                # ... and terminate connection to this client
-                LOGIT.info("Closing connection to misbehaving client '%s' (addr: '%s')", client, addr)
-                client.close()
-                break
+                continue
 
             # At this point, we are dealing with valid input.
             # Look up ASN for given IP address...
