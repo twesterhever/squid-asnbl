@@ -298,8 +298,8 @@ while True:
             # Do not append failed lookup results (ASN = 0 or empty) or duplicate entries...
             if returnasn and returnasn > 0 and returnasn not in ASNS:
                 ASNS.append(returnasn)
-        except BrokenPipeError:
-            print("BH")
+        except (BrokenPipeError, ValueError):
+            ASNS = []
             break
 
     # Return BH if no ASNs were enumerated by the for loop above...
