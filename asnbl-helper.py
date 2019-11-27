@@ -152,15 +152,17 @@ def load_asnbl_file(filepath: str):
     return parsedasns
 
 
-def check_asn_against_list(asn: int, asnlist=None):
-    """ Function call: check_asn_against_list(ASN to be checked, list of ASNs to match against [if any])
+def check_asn_against_list(asn: int, querystring: str, asnlist=None):
+    """ Function call: check_asn_against_list(ASN to be checked, queried destination, list of ASNs to match against [if any])
     This takes a enumerated ASN - integer only, without the "AS"
     prefix commonly used -, and performs a lookup either against
     a DNS-based ASNBL/ASNWL or a static list. If the latter is used, a
     list of ASNs to match against - probably read from a file - is
     expected.
 
-    This function returns True if an ASN matches, an False if not. """
+    This function returns True if an ASN matches, an False if not. Passing
+    queried destination is necessary for logging root cause of listing
+    hits. """
 
     fqfailed = True
 
