@@ -5,7 +5,7 @@
 
 This script provides a Unix socket for ASN lookups as a deamon service.
 Since the ASN database is expensive to read and to store in RAM, a
-centralised makes more sense than local insances in each Squid ASN helper.
+centralised makes more sense than local instances in each Squid ASN helper.
 
 Socket path, permissions, et cetera can be specified using the constants
 below import section. """
