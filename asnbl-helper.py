@@ -278,7 +278,7 @@ while True:
     if is_ipaddress(QUERYSTRING):
         IPS = [QUERYSTRING]
     elif is_valid_domain(QUERYSTRING):
-        IPS = resolve_addresses(QUERYSTRING)
+        IPS = resolve_addresses(QUERYSTRING.strip(".") + ".")
 
         # Test if any IP address was successfully resolved for given destination...
         if not IPS:
