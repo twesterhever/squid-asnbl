@@ -239,7 +239,7 @@ elif ASNBLFILE:
 RESOLVER = dns.resolver.Resolver()
 
 # Set timeout for resolving
-RESOLVER.timeout = 2
+RESOLVER.lifetime = 5
 
 # Establish connection to ASN lookup socket...
 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
