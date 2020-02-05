@@ -16,7 +16,7 @@ pyasn_util_download.py --latestv46;
 # Convert database into desired format and store it at desired location
 # (Since download filename differs over time, we assume there is just one
 # rib.* file, i.e. rib.20191018.0600.bz2)
-pyasn_util_convert.py --single rib.*.bz2 ${CONVERTDBFILE};
+pyasn_util_convert.py --single rib.*.bz2 "${CONVERTDBFILE}";
 
 # Send SIGHUP to asn-lookup [.py] so new ASN database will be read,
 # assuming the lookup script was not renamed and is executed directly
