@@ -149,17 +149,23 @@ class SockServ(object):
                 del ipobject
                 continue
 
-            # At this point, we are dealing with valid input.
-            # Look up ASN for given IP address...
-            try:
-                asn = ASNDB.lookup(cleanstring)[0]
-                if asn is None:
-                    asn = 0
-            except Exception as error:
-                LOGIT.warning("Failed to enumerate ASN for input '%s' (error: %s), returning zero...", cleanstring, error)
-                asn = 0
-            finally:
-                client.send(str(asn).encode('utf-8'))
+            asn = 0
+            if not ipobject.is_global:
+                # Do not attempt to lookup private, reserved or otherwise non-routable IP
+                # addresses in the ASN database. In order not to break heavily misconfigured
+                # web sites operated by braindead IT staff, return 0 instead of an error...
+                LOGIT.info("Skipping ASNDB lookup for martian destination '%s', returning zero...", cleanstring)
+            else:
+                # At this point, we are dealing with valid input.
+                # Look up ASN for given IP address...
+                try:
+                    asn = ASNDB.lookup(cleanstring)[0]
+                    if asn is None:
+                        asn = 0
+                except Exception as error:
+                    LOGIT.warning("Failed to enumerate ASN for input '%s' (error: %s), returning zero...", cleanstring, error)
+
+            client.send(str(asn).encode('utf-8'))
 
 
 # Initially load ASN database, so the script can handle queries straight away...
