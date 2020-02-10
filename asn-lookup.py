@@ -117,12 +117,16 @@ class SockServ(object):
             try:
                 data = client.recv(bufsize)
                 cleanstring = str(data.decode('utf-8').rstrip())
+
+                if not data:
+                    LOGIT.debug("No data received from client, possibly broken pipe, bailing...")
+                    raise BrokenPipeError
             except socket.timeout:
                 # Handle timeouts while reading data...
                 LOGIT.info("Timeout on connection to client '%s' with address '%s' exceeded", client, addr)
                 client.close()
                 break
-            except (ConnectionResetError, BrokenPipeError):
+            except (ConnectionResetError, BrokenPipeError, OSError):
                 LOGIT.debug("Connection was reset by client, bailing...")
                 client.close()
                 break
