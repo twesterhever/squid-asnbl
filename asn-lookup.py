@@ -41,6 +41,11 @@ if os.path.islink("/dev/log"):
     HANDLER = logging.handlers.SysLogHandler(address="/dev/log")
 else:
     HANDLER = logging.StreamHandler(stream=sys.stderr)
+    # There is no additional metadata available when logging to STDERR,
+    # so a logging formatter needs to be added here...
+    FORMAT = logging.Formatter(fmt="%(asctime)s %(name)s[%(process)d] %(levelname).4s: %(message)s",
+                               datefmt="%b %d %H:%M:%S")
+    HANDLER.setFormatter(FORMAT)
 
 LOGIT.addHandler(HANDLER)
 
