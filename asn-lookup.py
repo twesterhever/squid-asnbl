@@ -144,7 +144,7 @@ class SockServ(object):
                 LOGIT.warning("Discarding invalid input (%s bytes) from client...", len(data))
                 try:
                     client.send("Invalid input received.\n".encode('utf-8'))
-                except BrokenPipeError:
+                except (BrokenPipeError, OSError):
                     # Client has closed connection by now, do not throw an error here...
                     pass
 
