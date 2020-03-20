@@ -12,8 +12,8 @@
 
 . /etc/rc.subr
 
-name=nrpe3
-rcvar=nrpe3_enable
+name=asnlookup
+rcvar=asnlookup_enable
 
 load_rc_config "${name}"
 
