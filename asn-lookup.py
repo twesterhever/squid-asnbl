@@ -30,6 +30,8 @@ SOCKETPATH = "/tmp/squid-asnbl.sock"
 SOCKETPERMISSIONS = stat.S_IWUSR | stat.S_IRUSR | stat.S_IWGRP | stat.S_IRGRP
 # Path to ASN database to be used
 ASNDBPATH = "/opt/squid-asnbl/asndb-current.dat"
+# Path to the PID file to be written
+PIDFILE = "/tmp/squid-asnbl.pid"
 
 ASNDB = None
 
@@ -48,6 +50,17 @@ else:
     HANDLER.setFormatter(FORMAT)
 
 LOGIT.addHandler(HANDLER)
+
+# Write PID to given path. We assume there is no concurrent instance of this script
+# running on the same machine and therefore delete existing PID files (orphaned?) if
+# necessary.
+if os.path.isfile(PIDFILE):
+    LOGIT.warning("Removing existing PID file '%s' - orphaned or concurrent script instance running?",
+                  PIDFILE)
+    os.remove(PIDFILE)
+
+with open(PIDFILE, "w") as fptr:
+    fptr.write(os.getpid())
 
 
 def load_asndb(context=None, psignal=None):
