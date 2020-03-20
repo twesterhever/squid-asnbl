@@ -14,7 +14,7 @@ below import section. """
 import ipaddress
 import logging
 import logging.handlers
-import os.path
+import os
 import signal
 import socket
 import stat
@@ -34,6 +34,7 @@ ASNDBPATH = "/opt/squid-asnbl/asndb-current.dat"
 PIDFILE = "/tmp/squid-asnbl.pid"
 
 ASNDB = None
+PID = os.getpid()
 
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('asn-lookup')
@@ -60,7 +61,8 @@ if os.path.isfile(PIDFILE):
     os.remove(PIDFILE)
 
 with open(PIDFILE, "w") as fptr:
-    fptr.write(str(os.getpid()))
+    LOGIT.debug("Writing PID %s to PID file '%s'", PID, PIDFILE)
+    fptr.write(str(PID))
 
 
 def load_asndb(context=None, psignal=None):
@@ -201,6 +203,9 @@ try:
     SockServ()
 except KeyboardInterrupt:
     LOGIT.info("Received KeyboardInterrupt, shutting down...")
+    # Delete PID file...
+    os.remove(PIDFILE)
+
     sys.exit(0)
 
 # EOF
