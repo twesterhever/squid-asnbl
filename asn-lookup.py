@@ -38,7 +38,7 @@ PID = os.getpid()
 
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('asn-lookup')
-LOGIT.setLevel(logging.DEBUG)
+LOGIT.setLevel(logging.INFO)
 
 if os.path.islink("/dev/log"):
     HANDLER = logging.handlers.SysLogHandler(address="/dev/log")
@@ -80,6 +80,19 @@ def load_asndb(context=None, psignal=None):
     global ASNDB
     ASNDB = pyasn.pyasn(ASNDBPATH)
     LOGIT.debug("ASN database set up with object '%s'", ASNDB)
+
+
+def teardown(context=None, psignal=None):
+    """ Function call: teardown()
+
+    This does whatever is necessary for clean termination of this script, such
+    as removing PID files.
+    """
+
+    LOGIT.info("Received %s from %s, terminating...", psignal, context)
+
+    os.remove(PIDFILE)
+    sys.exit(0)
 
 
 class SockServ(object):
@@ -198,14 +211,14 @@ load_asndb()
 # Reload ASN DB on SIGHUP...
 signal.signal(signal.SIGHUP, load_asndb)
 
+# Terminate script on SIGTERMs...
+signal.signal(signal.SIGTERM, teardown)
+
 # Call socket object for processing helper queries
 try:
     SockServ()
 except KeyboardInterrupt:
     LOGIT.info("Received KeyboardInterrupt, shutting down...")
-    # Delete PID file...
-    os.remove(PIDFILE)
-
-    sys.exit(0)
+    teardown()
 
 # EOF
