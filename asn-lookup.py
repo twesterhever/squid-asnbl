@@ -60,7 +60,7 @@ if os.path.isfile(PIDFILE):
     os.remove(PIDFILE)
 
 with open(PIDFILE, "w") as fptr:
-    fptr.write(os.getpid())
+    fptr.write(str(os.getpid()))
 
 
 def load_asndb(context=None, psignal=None):
