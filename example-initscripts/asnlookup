@@ -20,11 +20,12 @@ load_rc_config "${name}"
 : ${asnlookup_enable:=NO}
 
 command="/usr/local/bin/asn-lookup.py"
-command_args="&"
 pidfile="/tmp/squid-asnbl.pid"
 procname="/usr/local/bin/python3.7"
 extra_commands=reload
 sig_reload=HUP
+
+start_cmd="daemon -u squid /usr/local/bin/asn-lookup.py"
 
 run_rc_command "$1"
 
