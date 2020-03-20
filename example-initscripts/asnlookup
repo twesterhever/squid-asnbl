@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# $FreeBSD$
+#
+# PROVIDE: asnlookup
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+#
+# Add the following lines to /etc/rc.conf to enable asnlookup:
+# asnlookup_enable (bool):    Set to "NO" by default.
+#                             Set it to "YES" to enable asnlookup.
+
+. /etc/rc.subr
+
+name=nrpe3
+rcvar=nrpe3_enable
+
+load_rc_config "${name}"
+
+: ${asnlookup_enable:=NO}
+
+command="/usr/local/bin/asn-lookup.py"
+command_args=""
+pidfile="/tmp/squid-asnbl.pid"
+extra_commands=reload
+sig_reload=HUP
+
+run_rc_command "$1"
