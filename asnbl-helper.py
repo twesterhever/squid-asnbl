@@ -266,6 +266,8 @@ LOGIT.info("asn-lookup [.py] socket operational - excellent. Waiting for input..
 while True:
     try:
         QUERYSTRING = str(sys.stdin.readline().rstrip().split()[0])
+    except IndexError:
+        continue
     except KeyboardInterrupt:
         sys.exit(127)
 
