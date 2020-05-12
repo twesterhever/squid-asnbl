@@ -29,7 +29,8 @@ ASDIVERSITYTHRESHOLD = 5
 # threshold (useful for simple Fast Flux mitigation)?
 BLOCKDIVERSITYEXCEEDINGDST = False
 # List of IP/ASN tuples for socket testing purposes
-TESTDATA = [("8.8.8.8", 15169),
+TESTDATA = [("1.1.1.1", 13335),
+            ("8.8.8.8", 15169),
             ("194.95.245.140", 680),
             ("10.0.0.1", 0),
             ("127.0.0.1", 0),
