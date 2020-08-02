@@ -191,18 +191,21 @@ def asndb_response_tests(testdata: str, asndb):
 
     tresult = True
 
-    for stestdata in testdata.split():
-        # XXX: Attempt to work around crappy data types from ConfigParser()
-        # while trying to keep configuration values as human-readable as possible.
-        ipasntuple = (stestdata[0].strip("("), int(stestdata[1].strip(")")))
+    # XXX: Attempt to work around crappy data types from ConfigParser()
+    # while trying to keep configuration values as human-readable as possible.
+    ctdata = re.sub(r"[\(\),]", "", testdata)
+    titerable = iter(ctdata.split())
+    ptdata = list(zip(titerable, titerable))
+
+    for stestdata in ptdata:
         LOGIT.debug("Running response test for '%s' against ASNDB '%s' ...",
-                    ipasntuple, asndb)
+                    stestdata, asndb)
 
-        returndata = resolve_asn(ipasntuple[0], asndb)
+        returndata = resolve_asn(stestdata[0], asndb)
 
-        if returndata != ipasntuple[1]:
+        if returndata != int(stestdata[1]):
             LOGIT.error("Response test failed for ASNDB '%s' (tuple: %s), aborting",
-                        asndb, ipasntuple)
+                        asndb, stestdata)
             tresult = False
             break
 
