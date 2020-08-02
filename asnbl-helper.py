@@ -469,7 +469,7 @@ while True:
     #
     # Depending on the configuration set at the beginning of this
     # script, this is ignored or access will be denied.
-    if len(ASNS) > config["GENERAL"]["AS_DIVERSITY_THRESHOLD"]:
+    if len(ASNS) > config.getint("GENERAL", "AS_DIVERSITY_THRESHOLD"):
         LOGIT.warning("Destination '%s' exceeds ASN diversity threshold (%s > %s), possibly Fast Flux: %s",
                       QUERYSTRING, len(ASNS), config["GENERAL"]["AS_DIVERSITY_THRESHOLD"], ASNS)
 
