@@ -222,9 +222,9 @@ if os.path.isfile(CFILE) and not os.path.islink(CFILE):
             raise ValueError("resolver timeout configured out of bounds")
 
         if config["GENERAL"]["SOCKET_PATH"]:
-            # Assume an existing path to be valid for the moment, as sockets are not
-            # covered rightly by os.path.isfile() and broken/faulty sockets will be
-            # hopefully detected by using socket.connect() afterwards... :-/
+            # XXX: Assume an existing path to be valid for the moment, as sockets are
+            # not covered rightly by os.path.isfile() and broken/faulty sockets will
+            # hopefully be detected by using socket.connect() afterwards... :-/
             if not os.path.exists(config["GENERAL"]["SOCKET_PATH"]):
                 raise ValueError("socket path to asn-lookup [.py] is not a file")
         else:
@@ -312,7 +312,11 @@ if config["GENERAL"]["SOCKET_PATH"]:
 
     # Check if ASN lookup script returns valid data...
     LOGIT.debug("Connected to asn-lookup [.py] socket, running response tests...")
-    for ipasntuple in TESTDATA:
+    for stestdata in config["GENERAL"]["TESTDATA"].split():
+        # XXX: Attempt to work around crappy data types from ConfigParser()
+        # while trying to keep configuration values as human-readable as possible.
+        ipasntuple = (stestdata[0].strip("("), int(stestdata[1].strip(")")))
+
         sock.send(str(ipasntuple[0]).encode('utf-8'))
         returndata = int(sock.recv(64))
 
