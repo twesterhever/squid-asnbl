@@ -89,6 +89,24 @@ def is_valid_domain(chkdomain: str):
     return True
 
 
+def build_reverse_ip(ipaddr):
+    """ Function call: build_reverse_ip(IP address)
+
+    This function takes an IPv4 or IPv6 address, and converts it so
+    a RBL query can performed with. The full DNS query string is then
+    returned back."""
+
+    addr = ipaddress.ip_address(ipaddr)
+
+    if addr.version == 6 or addr.version == 4:
+        # In this case, we are dealing with an IP address
+        rev = '.'.join(addr.reverse_pointer.split('.')[:-2])
+        return rev
+
+    # In this case, we are dealing with a martian
+    return None
+
+
 def resolve_addresses(domain: str):
     """ Function call: resolve_address(domain)
     This function takes a domain and enumerates all IPv4 and IPv6
@@ -140,6 +158,27 @@ def load_asnbl_file(filepath: str):
             parsedasns.append(parsed)
 
     return parsedasns
+
+
+def resolve_asn(ipaddr: str, asndb):
+    """ Function call: resolve_asn(IP address to be resolved,
+                                   ASNDB [socket or FQDN])
+    This function does whatever magic is necessary to resolve the ASN of
+    the given IP address. If type(asndb) indicates a socket, we are most likely
+    running in combination with a asn-lookup [.py] instance, otherwise, a FQDN
+    is assumed and queried via DNS. """
+
+    if isinstance(type(asndb), type(socket.socket)):
+        # We are dealing with a local socket (exception handling takes place below)...
+        asndb.send(str(ipaddr).encode('utf-8'))
+        returnasn = int(sock.recv(64))
+    else:
+        # user@work:~> host -t TXT 8.8.8.8.asn.routeviews.org
+        # 8.8.8.8.asn.routeviews.org descriptive text "15169" "8.8.8.0" "24"
+        answer = RESOLVER.query((str(build_reverse_ip(ipaddr)) + "." + asndb), "TXT")
+        returnasn = int(answer[0].to_text().split()[0].strip("\""))
+
+    return returnasn
 
 
 def check_asn_against_list(asn: int, querystring: str, asnbldomains: list, asnlist: list):
@@ -322,6 +361,9 @@ if config["GENERAL"]["SOCKET_PATH"]:
             sys.exit(127)
 
     LOGIT.info("asn-lookup [.py] socket operational - excellent. Waiting for input...")
+else:
+    # XXX: to do
+    pass
 
 # Read domains or IP addresses from STDIN in a while loop, resolve IP
 # addresses if necessary, and do ASN lookups against specified socket for
@@ -355,16 +397,27 @@ while True:
     # Enumerate ASN for each IP address in $IPS...
     ASNS = []
     for singleip in IPS:
-        try:
-            sock.send(str(singleip).encode('utf-8'))
-            returnasn = int(sock.recv(64))
+        if sock:
+            try:
+                resolvedasn = resolve_asn(singleip, sock)
+            except (BrokenPipeError, ValueError):
+                LOGIT.warning("Failed to enumerate ASN for '%s' by using asn-lookup [.py] socket @ '%s'",
+                              singleip, sock)
+                ASNS = []
+                break
+        else:
+            try:
+                resolvedasn = resolve_asn(singleip, config["GENERAL"]["ASNDB_FQDN"])
+            except (dns.exception.Timeout, dns.resolver.NoNameservers):
+                LOGIT.warning("ASNDB '%s' failed to answer query for '%s' within %s seconds",
+                              config["GENERAL"]["ASNDB_FQDN"], singleip, RESOLVER.lifetime)
+                ASNS = []
+                break
 
-            # Do not append failed lookup results (ASN = 0 or empty) or duplicate entries...
-            if returnasn and returnasn > 0 and returnasn not in ASNS:
-                ASNS.append(returnasn)
-        except (BrokenPipeError, ValueError):
-            ASNS = []
-            break
+        # Do not append failed lookup results (ASN = 0 or empty or not an integer) or
+        # duplicate entries as they do not contribute to Fast Flux detection...
+        if resolvedasn and isinstance(type(resolvedasn), type(int)) and resolvedasn > 0 and resolvedasn not in ASNS:
+            ASNS.append(resolvedasn)
 
     # Return BH if no ASNs were enumerated by the for loop above...
     if not ASNS:
