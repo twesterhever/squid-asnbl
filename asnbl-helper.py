@@ -152,13 +152,11 @@ def check_asn_against_list(asn: int, querystring: str, asnbldomains: list, asnli
     a static list read from file-based ASNBLs, or both.
 
     This function returns True if an ASN matches, an False if not. Passing
-    queried destination is necessary for logging root cause of listing
-    hits. """
+    queried destination is necessary for logging root cause of listing hits. """
 
     fqfailed = True
 
     if asnbldomains:
-        # Running in DNS mode...
         for asnbldom in asnbldomains:
             try:
                 answer = RESOLVER.query((str(asn) + "." + asnbldom), 'A')
@@ -179,11 +177,9 @@ def check_asn_against_list(asn: int, querystring: str, asnbldomains: list, asnli
 
                 LOGIT.warning("ASNBL hit on '%s.%s' with response '%s'",
                               asn, asnbldom, responses.strip())
-
                 break
 
     if asnlist:
-        # Running in static list mode...
         if asn in asnlist:
             fqfailed = False
 
