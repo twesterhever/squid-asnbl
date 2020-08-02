@@ -171,7 +171,7 @@ def resolve_asn(ipaddr: str, asndb):
     if isinstance(type(asndb), type(socket.socket)):
         # We are dealing with a local socket (exception handling takes place below)...
         asndb.send(str(ipaddr).encode('utf-8'))
-        returnasn = int(sock.recv(64))
+        returnasn = int(asndb.recv(64))
     else:
         # user@work:~> host -t TXT 8.8.8.8.asn.routeviews.org
         # 8.8.8.8.asn.routeviews.org descriptive text "15169" "8.8.8.0" "24"
