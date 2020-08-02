@@ -181,6 +181,32 @@ def resolve_asn(ipaddr: str, asndb):
     return returnasn
 
 
+def asndb_response_tests(testdata: str, asndb):
+    """ Function call: asndb_response_tests(response rest data,
+                                            ASNDB [socket or FQDN])
+
+    This function asserts the given ASNDB to return expected ASNs for
+    given IP addresses in order to be considered operational. It returns
+    True if this test succeeds, and False otherwise. """
+
+    tresult = True
+
+    for stestdata in testdata.split():
+        # XXX: Attempt to work around crappy data types from ConfigParser()
+        # while trying to keep configuration values as human-readable as possible.
+        ipasntuple = (stestdata[0].strip("("), int(stestdata[1].strip(")")))
+
+        returndata = resolve_asn(ipasntuple[0], asndb)
+
+        if returndata != ipasntuple[1]:
+            LOGIT.error("Response test failed for ASNDB '%s' (tuple: %s), aborting",
+                        asndb, ipasntuple)
+            tresult = False
+            break
+
+    return tresult
+
+
 def check_asn_against_list(asn: int, querystring: str, asnbldomains: list, asnlist: list):
     """ Function call: check_asn_against_list(ASN to be checked,
                                               queried destination,
@@ -347,26 +373,25 @@ if config["GENERAL"]["SOCKET_PATH"]:
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect(config["GENERAL"]["SOCKET_PATH"])
 
-    # Check if ASN lookup script returns valid data...
     LOGIT.debug("Connected to asn-lookup [.py] socket, running response tests...")
-    for stestdata in config["GENERAL"]["TESTDATA"].split():
-        # XXX: Attempt to work around crappy data types from ConfigParser()
-        # while trying to keep configuration values as human-readable as possible.
-        ipasntuple = (stestdata[0].strip("("), int(stestdata[1].strip(")")))
 
-        sock.send(str(ipasntuple[0]).encode('utf-8'))
-        returndata = int(sock.recv(64))
-
-        if returndata != ipasntuple[1]:
-            LOGIT.error("Response test failed for asn-lookup [.py] socket (tuple: %s), aborting",
-                        ipasntuple)
-            print("BH")
-            sys.exit(127)
-
-    LOGIT.info("asn-lookup [.py] socket operational - excellent. Waiting for input...")
+    if asndb_response_tests(config["GENERAL"]["TESTDATA"], sock):
+        LOGIT.info("asn-lookup [.py] socket operational - excellent. Waiting for input...")
+    else:
+        LOGIT.error("asn-lookup [.py] socket response tests failed, aborting")
+        print("BH")
+        sys.exit(127)
 else:
-    # XXX: to do
-    pass
+    asndbfqdn = config["GENERAL"]["ASNDB_FQDN"]
+    LOGIT.debug("Running response tests against DNS-based ASNDB '%s' ...", asndbfqdn)
+
+    if asndb_response_tests(config["GENERAL"]["TESTDATA"], asndbfqdn):
+        LOGIT.info("ASNDB '%s' operational - excellent. Waiting for input...",
+                   asndbfqdn)
+    else:
+        LOGIT.error("ASNDB '%s' response tests failed, aborting", asndbfqdn)
+        print("BH")
+        sys.exit(127)
 
 # Read domains or IP addresses from STDIN in a while loop, resolve IP
 # addresses if necessary, and do ASN lookups against specified socket for
