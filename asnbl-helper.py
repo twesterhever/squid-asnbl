@@ -397,7 +397,9 @@ while True:
                 break
         except (dns.exception.Timeout, dns.resolver.NoNameservers):
             # Return "BH" in case of DNS failures...
+            qfailed = False
             print("BH")
+            break
 
     if qfailed:
         print("ERR")
