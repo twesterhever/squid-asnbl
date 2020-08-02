@@ -161,7 +161,7 @@ def check_asn_against_list(asn: int, querystring: str, asnbldomains: list, asnli
             try:
                 answer = RESOLVER.query((str(asn) + "." + asnbldom), 'A')
             except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
-                fqfailed = True
+                pass
             except (dns.exception.Timeout, dns.resolver.NoNameservers):
                 LOGIT.warning("ASNBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
                               asnbldom, asn, RESOLVER.lifetime)
