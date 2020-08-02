@@ -165,8 +165,7 @@ def check_asn_against_list(asn: int, querystring: str, asnbldomains: list, asnli
             except (dns.exception.Timeout, dns.resolver.NoNameservers):
                 LOGIT.warning("ASNBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
                               asnbldom, asn, RESOLVER.lifetime)
-                print("BH")
-                break
+                raise
             else:
                 fqfailed = False
 
@@ -391,10 +390,14 @@ while True:
     # Query enumerated ASNs against specified black-/whitelist sources...
     qfailed = True
     for singleasn in ASNS:
-        if check_asn_against_list(singleasn, QUERYSTRING, ASNBLDOMAINS, ASNLIST):
-            qfailed = False
-            print("OK")
-            break
+        try:
+            if check_asn_against_list(singleasn, QUERYSTRING, ASNBLDOMAINS, ASNLIST):
+                qfailed = False
+                print("OK")
+                break
+        except (dns.exception.Timeout, dns.resolver.NoNameservers):
+            # Return "BH" in case of DNS failures...
+            print("BH")
 
     if qfailed:
         print("ERR")
