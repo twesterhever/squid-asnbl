@@ -275,18 +275,21 @@ else:
     LOGIT.error("Supplied configuraion file path '%s' is not a file", CFILE)
     sys.exit(127)
 
-# Test if given arguments are paths or FQDNs...
+# Placeholders for ASNBL sources (files, FQDNs) and read contents...
 ASNBLDOMAIN = []
 ASNBLFILE = []
 ASNLIST = []
 
-for targument in sys.argv[1:]:
-    if os.path.exists(targument):
-        ASNBLFILE.append(targument)
-    elif is_valid_domain(targument):
-        ASNBLDOMAIN.append(targument.strip(".") + ".")
+for scasnbl in config["GENERAL"]["ACTIVE_ASNBLS"].split():
+    if config[scasnbl]["TYPE"] == "file":
+        ASNBLFILE.append(config[scasnbl]["PATH"])
+    elif config[scasnbl]["TYPE"] == "dns":
+        ASNBLDOMAIN.append(config[scasnbl]["FQDN"].strip(".") + ".")
     else:
-        print("BH")
+        # This should not happen as invalid ASNBL types were caught before,
+        # but we will never know...
+        LOGIT.error("Detected invalid type '%s' while processing active ASNBL '%s'. This should not happen, bailing!",
+                    config[scasnbl]["TYPE"], scasnbl)
         sys.exit(127)
 
 # We do not support both DNS and file mode at the same time. If
