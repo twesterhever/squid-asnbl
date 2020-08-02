@@ -153,7 +153,9 @@ def load_asnbl_file(filepath: str):
 
 
 def check_asn_against_list(asn: int, querystring: str, asnlist=None):
-    """ Function call: check_asn_against_list(ASN to be checked, queried destination, list of ASNs to match against [if any])
+    """ Function call: check_asn_against_list(ASN to be checked,
+                                              queried destination,
+                                              list of ASNs to match against [if any])
     This takes a enumerated ASN - integer only, without the "AS"
     prefix commonly used -, and performs a lookup either against
     a DNS-based ASNBL/ASNWL or a static list. If the latter is used, a
@@ -173,6 +175,11 @@ def check_asn_against_list(asn: int, querystring: str, asnlist=None):
                 answer = RESOLVER.query((str(asn) + "." + asnbldom), 'A')
             except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
                 fqfailed = True
+            except (dns.exception.Timeout, dns.resolver.NoNameservers):
+                LOGIT.warning("ASNBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
+                              asnbldom, asn, RESOLVER.lifetime)
+                print("BH")
+                break
             else:
                 fqfailed = False
 
