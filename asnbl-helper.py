@@ -142,15 +142,14 @@ def load_asnbl_file(filepath: str):
     return parsedasns
 
 
-def check_asn_against_list(asn: int, querystring: str, asnlist: list = None):
+def check_asn_against_list(asn: int, querystring: str, asnbldomains: list, asnlist: list):
     """ Function call: check_asn_against_list(ASN to be checked,
                                               queried destination,
-                                              list of ASNs to match against [if any])
-    This takes a enumerated ASN - integer only, without the "AS"
-    prefix commonly used -, and performs a lookup either against
-    a DNS-based ASNBL/ASNWL or a static list. If the latter is used, a
-    list of ASNs to match against - probably read from a file - is
-    expected.
+                                              list of active DNS-based ASNBLs,
+                                              list of ASNs read from file-based ASNBLs)
+    This takes an enumerated ASN - integer only, without the "AS"
+    prefix commonly used -, and performs a lookup against DNS-based ASNBLs/ASNWL,
+    a static list read from file-based ASNBLs, or both.
 
     This function returns True if an ASN matches, an False if not. Passing
     queried destination is necessary for logging root cause of listing
@@ -158,9 +157,9 @@ def check_asn_against_list(asn: int, querystring: str, asnlist: list = None):
 
     fqfailed = True
 
-    if ASNBLDOMAIN:
+    if asnbldomains:
         # Running in DNS mode...
-        for asnbldom in ASNBLDOMAIN:
+        for asnbldom in asnbldomains:
             try:
                 answer = RESOLVER.query((str(asn) + "." + asnbldom), 'A')
             except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
@@ -182,7 +181,8 @@ def check_asn_against_list(asn: int, querystring: str, asnlist: list = None):
                               asn, asnbldom, responses.strip())
 
                 break
-    else:
+
+    if asnlist:
         # Running in static list mode...
         if asn in asnlist:
             fqfailed = False
@@ -395,7 +395,7 @@ while True:
     # Query enumerated ASNs against specified black-/whitelist sources...
     qfailed = True
     for singleasn in ASNS:
-        if check_asn_against_list(singleasn, QUERYSTRING, ASNLIST):
+        if check_asn_against_list(singleasn, QUERYSTRING, ASNBLDOMAINS, ASNLIST):
             qfailed = False
             print("OK")
             break
