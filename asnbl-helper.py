@@ -361,7 +361,7 @@ RESOLVER = dns.resolver.Resolver()
 # Set timeout for resolving
 RESOLVER.lifetime = config.getint("GENERAL", "RESOLVER_TIMEOUT")
 
-LOGIT.debug("Running ASNDB response tests...")
+LOGIT.info("Running ASNDB response tests...")
 if config["GENERAL"]["SOCKET_PATH"]:
     # Establish connection to ASN lookup socket...
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
