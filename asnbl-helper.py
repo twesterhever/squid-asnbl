@@ -152,7 +152,7 @@ def load_asnbl_file(filepath: str):
     return parsedasns
 
 
-def check_asn_against_list(asn: int, querystring: str, asnlist=None):
+def check_asn_against_list(asn: int, querystring: str, asnlist: list = None):
     """ Function call: check_asn_against_list(ASN to be checked,
                                               queried destination,
                                               list of ASNs to match against [if any])
