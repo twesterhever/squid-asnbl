@@ -368,6 +368,7 @@ RESOLVER = dns.resolver.Resolver()
 # Set timeout for resolving
 RESOLVER.lifetime = config.getint("GENERAL", "RESOLVER_TIMEOUT")
 
+LOGIT.debug("Running ASNDB response tests...")
 if config["GENERAL"]["SOCKET_PATH"]:
     # Establish connection to ASN lookup socket...
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -381,7 +382,7 @@ if config["GENERAL"]["SOCKET_PATH"]:
         LOGIT.error("asn-lookup [.py] socket response tests failed, aborting")
         print("BH")
         sys.exit(127)
-else:
+elif not config["GENERAL"]["SOCKET_PATH"] and config["GENERAL"]["ASNDB_FQDN"]:
     asndbfqdn = config["GENERAL"]["ASNDB_FQDN"]
     LOGIT.debug("Running response tests against DNS-based ASNDB '%s' ...", asndbfqdn)
 
@@ -392,6 +393,11 @@ else:
         LOGIT.error("ASNDB '%s' response tests failed, aborting", asndbfqdn)
         print("BH")
         sys.exit(127)
+else:
+    # Again, this should not happen...
+    LOGIT.error("Reached unexpected ASNDB response test condition. This should not happen, bailing!")
+    print("BH")
+    sys.exit(127)
 
 # Read domains or IP addresses from STDIN in a while loop, resolve IP
 # addresses if necessary, and do ASN lookups against specified socket for
