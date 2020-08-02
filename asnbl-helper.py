@@ -355,13 +355,6 @@ for scasnbl in config["GENERAL"]["ACTIVE_ASNBLS"].split():
         print("BH")
         sys.exit(127)
 
-# Read contents from given ASNBL files...
-if ASNBLFILES:
-    for singlefile in ASNBLFILES:
-        ASNLIST.extend(load_asnbl_file(singlefile))
-
-    LOGIT.info("Successfully read supplied ASN lists, %s entries by now", len(ASNLIST))
-
 # Set up resolver object
 RESOLVER = dns.resolver.Resolver()
 
@@ -398,6 +391,13 @@ else:
     LOGIT.error("Reached unexpected ASNDB response test condition. This should not happen, bailing!")
     print("BH")
     sys.exit(127)
+
+# Read contents from given ASNBL files...
+if ASNBLFILES:
+    for singlefile in ASNBLFILES:
+        ASNLIST.extend(load_asnbl_file(singlefile))
+
+    LOGIT.info("Successfully read supplied ASN lists, %s entries by now", len(ASNLIST))
 
 # Read domains or IP addresses from STDIN in a while loop, resolve IP
 # addresses if necessary, and do ASN lookups against specified socket for
