@@ -195,6 +195,8 @@ def asndb_response_tests(testdata: str, asndb):
         # XXX: Attempt to work around crappy data types from ConfigParser()
         # while trying to keep configuration values as human-readable as possible.
         ipasntuple = (stestdata[0].strip("("), int(stestdata[1].strip(")")))
+        LOGIT.debug("Running response test for '%s' against ASNDB '%s' ...",
+                    ipasntuple, asndb)
 
         returndata = resolve_asn(ipasntuple[0], asndb)
 
