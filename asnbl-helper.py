@@ -7,9 +7,13 @@ Squid helper script for enumerating the ASN (Autonomous System
 Number) of an IP address and querying it against a file- or
 DNS-based black- or whitelist. If a domain is given, it will be
 resolved to its IP addresses, which will then be checked against
-the specified black-/whitelist source. """
+the specified black-/whitelist source.
+
+Settings are read from the configuration file path supplied as a
+command line argument. """
 
 # Import needed modules...
+import configparser
 import ipaddress
 import logging
 import logging.handlers
@@ -19,25 +23,11 @@ import socket
 import sys
 import dns.resolver
 
-# *** Define constants and settings... ***
-
-# Path to Unix socket provided by asn-lookup [.py]
-SOCKETPATH = "/tmp/squid-asnbl.sock"
-# How many different ASNs per destination are acceptable?
-ASDIVERSITYTHRESHOLD = 5
-# Respond with "OK" for destinations whose ASNs exceed given
-# threshold (useful for simple Fast Flux mitigation)?
-BLOCKDIVERSITYEXCEEDINGDST = False
-# List of IP/ASN tuples for socket testing purposes
-TESTDATA = [("1.1.1.1", 13335),
-            ("8.8.8.8", 15169),
-            ("194.95.245.140", 680),
-            ("10.0.0.1", 0),
-            ("127.0.0.1", 0),
-            ("2001:638:d:c102::140", 680),
-            ("2606:4700:10::6814:d673", 13335),
-            ("fe80::1", 0)]
-
+try:
+    CFILE = sys.argv[1]
+except IndexError:
+    print("Usage: " + sys.argv[0] + " [path to configuration file]")
+    sys.exit(127)
 
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('squid-asnbl-helper')
@@ -207,14 +197,82 @@ def check_asn_against_list(asn: int, querystring: str, asnlist: list = None):
     return True
 
 
-# Abort if no arguments are given...
-try:
-    if not sys.argv[1]:
-        print("BH")
+if os.path.isfile(CFILE) and not os.path.islink(CFILE):
+    LOGIT.debug("Attempting to read configuration from '%s' ...", CFILE)
+
+    if os.access(CFILE, os.W_OK) or os.access(CFILE, os.X_OK):
+        LOGIT.error("Supplied configuration file '%s' is writeable or executable, aborting", CFILE)
+        print("Supplied configuration file '" + CFILE + "' is writeable or executable, aborting")
         sys.exit(127)
-except IndexError:
-    print("Usage: " + sys.argv[0] + " ASNBL1 ASNBL2 ASNBLn (each FQDN or path to files)")
-    print("Please make sure general settings (path to asn-lookup [.py] socket, et al.) are set correctly.")
+
+    config = configparser.ConfigParser()
+
+    with open(CFILE, "r") as fptr:
+        config.read_file(fptr)
+
+    LOGIT.debug("Read configuration from '%s', performing sanity tests...", CFILE)
+
+    # Attempt to read mandatory configuration parameters and see if they contain
+    # useful values, if possible to determine.
+    try:
+        if config["GENERAL"]["LOGLEVEL"].upper() not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+            raise ValueError("log level configuration invalid")
+
+        if config.getint("GENERAL", "RESOLVER_TIMEOUT") not in range(2, 20):
+            raise ValueError("resolver timeout configured out of bounds")
+
+        if config["GENERAL"]["SOCKET_PATH"]:
+            # Assume an existing path to be valid for the moment, as sockets are not
+            # covered rightly by os.path.isfile() and broken/faulty sockets will be
+            # hopefully detected by using socket.connect() afterwards... :-/
+            if not os.path.exists(config["GENERAL"]["SOCKET_PATH"]):
+                raise ValueError("socket path to asn-lookup [.py] is not a file")
+        else:
+            # Empty socket path given, check for valid ASNDB FQDN...
+            if not is_valid_domain(config["GENERAL"]["ASNDB_FQDN"]):
+                raise ValueError("no socket path to asn-lookup [.py] given and ASNDB FQDN is invalid")
+
+        if config.getint("GENERAL", "AS_DIVERSITY_THRESHOLD") not in range(2, 10):
+            raise ValueError("ASN diversity threshold configured out of bounds")
+
+        if config.getboolean("GENERAL", "BLOCK_DIVERSITY_EXCEEDING_DESTINATIONS") not in [True, False]:
+            raise ValueError("block diversity exceeding destinations configuration invalid")
+
+        if not config["GENERAL"]["TESTDATA"]:
+            raise ValueError("no ASNDB testing data configured")
+
+        for scasnbl in config["GENERAL"]["ACTIVE_ASNBLS"].split():
+            if not config[scasnbl]:
+                raise ValueError("configuration section for active ASNBL " + scasnbl + " missing")
+
+            if config[scasnbl]["TYPE"].lower() == "dns":
+                if not is_valid_domain(config[scasnbl]["FQDN"]):
+                    raise ValueError("no valid FQDN given for active ASNBL " + scasnbl)
+            elif config[scasnbl]["TYPE"].lower() == "file":
+                if not os.path.isfile(config[scasnbl]["PATH"]) or os.path.islink(CFILE):
+                    raise ValueError("configured ASNBL file for active ASNBL " + scasnbl +
+                                     " is not a file")
+
+                if os.access(config[scasnbl]["PATH"], os.W_OK) or os.access(config[scasnbl]["PATH"], os.X_OK):
+                    raise ValueError("configured ASNBL file for active ASNBL " + scasnbl +
+                                     " is writeable or executable")
+            else:
+                raise ValueError("invalid type for active ASNBL " + scasnbl)
+
+    except (KeyError, ValueError) as error:
+        LOGIT.error("Configuration sanity tests failed: %s", error)
+        sys.exit(127)
+
+    LOGIT.info("Configuation sanity tests passed, good, processing...")
+
+    # Apply configured logging level to avoid INFO/DEBUG clutter (thanks, cf5cec3a)...
+    LOGIT.setLevel({"DEBUG": logging.DEBUG,
+                    "INFO": logging.INFO,
+                    "WARNING": logging.WARNING,
+                    "ERROR": logging.ERROR}[config["GENERAL"]["LOGLEVEL"].upper()])
+
+else:
+    LOGIT.error("Supplied configuraion file path '%s' is not a file", CFILE)
     sys.exit(127)
 
 # Test if given arguments are paths or FQDNs...
@@ -246,25 +304,26 @@ elif ASNBLFILE:
 RESOLVER = dns.resolver.Resolver()
 
 # Set timeout for resolving
-RESOLVER.lifetime = 5
+RESOLVER.lifetime = config.getint("GENERAL", "RESOLVER_TIMEOUT")
 
-# Establish connection to ASN lookup socket...
-sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-sock.connect(SOCKETPATH)
+if config["GENERAL"]["SOCKET_PATH"]:
+    # Establish connection to ASN lookup socket...
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.connect(config["GENERAL"]["SOCKET_PATH"])
 
-# Check if ASN lookup script returns valid data...
-LOGIT.debug("Connected to asn-lookup [.py] socket, running response tests...")
-for ipasntuple in TESTDATA:
-    sock.send(str(ipasntuple[0]).encode('utf-8'))
-    returndata = int(sock.recv(64))
+    # Check if ASN lookup script returns valid data...
+    LOGIT.debug("Connected to asn-lookup [.py] socket, running response tests...")
+    for ipasntuple in TESTDATA:
+        sock.send(str(ipasntuple[0]).encode('utf-8'))
+        returndata = int(sock.recv(64))
 
-    if returndata != ipasntuple[1]:
-        LOGIT.error("Response test failed for asn-lookup [.py] socket (tuple: %s), aborting",
-                    ipasntuple)
-        print("BH")
-        sys.exit(127)
+        if returndata != ipasntuple[1]:
+            LOGIT.error("Response test failed for asn-lookup [.py] socket (tuple: %s), aborting",
+                        ipasntuple)
+            print("BH")
+            sys.exit(127)
 
-LOGIT.info("asn-lookup [.py] socket operational - excellent. Waiting for input...")
+    LOGIT.info("asn-lookup [.py] socket operational - excellent. Waiting for input...")
 
 # Read domains or IP addresses from STDIN in a while loop, resolve IP
 # addresses if necessary, and do ASN lookups against specified socket for
@@ -320,11 +379,11 @@ while True:
     #
     # Depending on the configuration set at the beginning of this
     # script, this is ignored or access will be denied.
-    if len(ASNS) > ASDIVERSITYTHRESHOLD:
+    if len(ASNS) > config["GENERAL"]["AS_DIVERSITY_THRESHOLD"]:
         LOGIT.warning("Destination '%s' exceeds ASN diversity threshold (%s > %s), possibly Fast Flux: %s",
-                      QUERYSTRING, len(ASNS), ASDIVERSITYTHRESHOLD, ASNS)
+                      QUERYSTRING, len(ASNS), config["GENERAL"]["AS_DIVERSITY_THRESHOLD"], ASNS)
 
-        if BLOCKDIVERSITYEXCEEDINGDST:
+        if config.getboolean("GENERAL", "BLOCK_DIVERSITY_EXCEEDING_DESTINATIONS"):
             LOGIT.info("Denying access to possible Fast Flux destination '%s'",
                        QUERYSTRING)
             print("OK")
