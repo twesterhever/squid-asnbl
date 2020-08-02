@@ -276,15 +276,15 @@ else:
     sys.exit(127)
 
 # Placeholders for ASNBL sources (files, FQDNs) and read contents...
-ASNBLDOMAIN = []
-ASNBLFILE = []
+ASNBLDOMAINS = []
+ASNBLFILES = []
 ASNLIST = []
 
 for scasnbl in config["GENERAL"]["ACTIVE_ASNBLS"].split():
     if config[scasnbl]["TYPE"] == "file":
-        ASNBLFILE.append(config[scasnbl]["PATH"])
+        ASNBLFILES.append(config[scasnbl]["PATH"])
     elif config[scasnbl]["TYPE"] == "dns":
-        ASNBLDOMAIN.append(config[scasnbl]["FQDN"].strip(".") + ".")
+        ASNBLDOMAINS.append(config[scasnbl]["FQDN"].strip(".") + ".")
     else:
         # This should not happen as invalid ASNBL types were caught before,
         # but we will never know...
@@ -292,13 +292,9 @@ for scasnbl in config["GENERAL"]["ACTIVE_ASNBLS"].split():
                     config[scasnbl]["TYPE"], scasnbl)
         sys.exit(127)
 
-# We do not support both DNS and file mode at the same time. If
-# it is desired, please consider running two instances of this helper.
-if ASNBLDOMAIN and ASNBLFILE:
-    print("BH")
-    sys.exit(127)
-elif ASNBLFILE:
-    for singlefile in ASNBLFILE:
+# Read contents from given ASNBL files...
+if ASNBLFILES:
+    for singlefile in ASNBLFILES:
         ASNLIST.extend(load_asnbl_file(singlefile))
 
     LOGIT.info("Successfully read supplied ASN lists, %s entries by now", len(ASNLIST))
