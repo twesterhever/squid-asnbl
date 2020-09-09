@@ -473,7 +473,7 @@ while True:
         # duplicate entries as they do not contribute to Fast Flux detection. In order to
         # detect selective announcements, 0 will be preserved, which is considered to be
         # safe in terms of Fast Flux handling as well...
-        if resolvedasn and isinstance(type(resolvedasn), type(int)) and resolvedasn > -1 and resolvedasn not in ASNS:
+        if isinstance(type(resolvedasn), type(int)) and resolvedasn > -1 and resolvedasn not in ASNS:
             ASNS.append(resolvedasn)
 
     # Return BH if no ASNs were enumerated by the for loop above...
