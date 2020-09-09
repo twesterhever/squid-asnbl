@@ -6,7 +6,10 @@ against DNS- or file-based ASN blacklists.
 Looking at ASNs becomes handy since some blacklists do list these, but not all of
 their IP addresses (most software, in fact, is not capable of ASN-based filtering).
 Further, fast-flux C&C domains tend to be spread across multiple ASNs, while legitimate
-sites usually only scatter over one to four ASNs.
+sites usually only scatter over one to four ASNs. Even further, miscreans might announce
+their IP ranges only against their targets, operating C&C servers or sending spam without
+being visible to the rest of the internet and exposed to security researchers and
+blacklist operators.
 
 At the time of writing, [Spamhaus ASN-DROP](https://www.spamhaus.org/drop/) is the
 only ASN-based blacklist publically available.
@@ -25,7 +28,7 @@ line argument for `asnbl-helper.py`.
 Sanity checks are executed against given ASNDBs in order to make sure they are operational.
 Querying an instance of `asn-lookup.py` via a Unix socket should be suitable for most
 users, in case local ASNDBs should be avoided, DNS-based ASNDBs such as `asn.routeviews.org`
-are supported as well.
+or `origin.asn.cymru.com` are supported as well.
 
 Please refer to `example-configurations/asnbl-helper.conf` for a configuration file sample.
 
