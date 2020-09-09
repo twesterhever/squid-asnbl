@@ -309,6 +309,9 @@ if os.path.isfile(CFILE) and not os.path.islink(CFILE):
         if config.getboolean("GENERAL", "BLOCK_DIVERSITY_EXCEEDING_DESTINATIONS") not in [True, False]:
             raise ValueError("block diversity exceeding destinations configuration invalid")
 
+        if config.getboolean("GENERAL", "BLOCK_SUSPECTED_SELECTIVE_ANNOUNCEMENTS") not in [True, False]:
+            raise ValueError("block suspected selective announcements configuration invalid")
+
         if not config["GENERAL"]["TESTDATA"]:
             raise ValueError("no ASNDB testing data configured")
 
@@ -459,14 +462,30 @@ while True:
                 ASNS = []
                 break
 
-        # Do not append failed lookup results (ASN = 0 or empty or not an integer) or
-        # duplicate entries as they do not contribute to Fast Flux detection...
-        if resolvedasn and isinstance(type(resolvedasn), type(int)) and resolvedasn > 0 and resolvedasn not in ASNS:
+        # In case protection against destinations without public AS announcements for their
+        # IP addresses is desired, the query will be denied in case ASN = 0 appears in an
+        # resolve_asn() return value...
+        if resolvedasn == 0:
+            LOGIT.warning("Destination '%s' resolves to IP addresses '%s' without corresponding ASN, probably selectively announced",
+                          QUERYSTRING, singleip)
+
+        # Do not append failed lookup results (ASN < 0 or empty or not an integer) or
+        # duplicate entries as they do not contribute to Fast Flux detection. In order to
+        # detect selective announcements, 0 will be preserved, which is considered to be
+        # safe in terms of Fast Flux handling as well...
+        if resolvedasn and isinstance(type(resolvedasn), type(int)) and resolvedasn > -1 and resolvedasn not in ASNS:
             ASNS.append(resolvedasn)
 
     # Return BH if no ASNs were enumerated by the for loop above...
     if not ASNS:
         print("BH")
+        continue
+
+    # Deny access to destinations without public AS announcements for their IP addresses...
+    if 0 in ASNS and config.getboolean("GENERAL", "BLOCK_SUSPECTED_SELECTIVE_ANNOUNCEMENTS"):
+        LOGIT.info("Denying access to destination '%s' due to suspected selective announcements",
+                   QUERYSTRING)
+        print("OK")
         continue
 
     # Primitive Fast Flux mitigation: If a destination resolves to
