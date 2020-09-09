@@ -21,7 +21,13 @@ import os.path
 import re
 import socket
 import sys
+from getpass import getuser
 import dns.resolver
+
+
+if getuser() == "root" or os.getuid() == 0:
+    print("For security purposes, this script must not be executed as root!")
+    sys.exit(127)
 
 try:
     CFILE = sys.argv[1]

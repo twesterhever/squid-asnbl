@@ -20,7 +20,12 @@ import socket
 import stat
 import sys
 import threading
+from getpass import getuser
 import pyasn
+
+if getuser() == "root" or os.getuid() == 0:
+    print("For security purposes, this script must not be executed as root!")
+    sys.exit(127)
 
 # *** Define constants and settings... ***
 
