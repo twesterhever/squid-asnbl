@@ -175,9 +175,15 @@ def resolve_asn(ipaddr: str, asndb):
     is assumed and queried via DNS. """
 
     if isinstance(type(asndb), type(socket.socket)):
-        # We are dealing with a local socket (exception handling takes place below)...
-        asndb.send(str(ipaddr).encode('utf-8'))
-        returnasn = int(asndb.recv(64))
+        # We are dealing with a socket (exception handling takes place below), determine
+        # it's type as Unix and UDP sockets require different send/receive handling...
+        if asndb.type == socket.SOCK_STREAM:
+            asndb.send(str(ipaddr).encode("utf-8"))
+            returnasn = int(asndb.recv(64))
+        elif asndb.type == socket.SOCK_DGRAM:
+            asndb.sendto(str(ipaddr).encode("utf-8"), asndb.getpeername())
+            returnasn = int(asndb.recvfrom(64)[0])
+
     else:
         # user@work:~> host -t TXT 8.8.8.8.asn.routeviews.org
         # 8.8.8.8.asn.routeviews.org descriptive text "15169" "8.8.8.0" "24"
@@ -292,12 +298,22 @@ if os.path.isfile(CFILE) and not os.path.islink(CFILE):
         if config.getint("GENERAL", "RESOLVER_TIMEOUT") not in range(2, 20):
             raise ValueError("resolver timeout configured out of bounds")
 
-        if config["GENERAL"]["SOCKET_PATH"]:
+        if config["GENERAL"]["SOCKET_PATH"] and config["GENERAL"]["SOCKET_PATH"].startswith("unix:/"):
             # XXX: Assume an existing path to be valid for the moment, as sockets are
             # not covered rightly by os.path.isfile() and broken/faulty sockets will
             # hopefully be detected by using socket.connect() afterwards... :-/
             if not os.path.exists(config["GENERAL"]["SOCKET_PATH"]):
                 raise ValueError("socket path to asn-lookup [.py] is not a file")
+        elif config["GENERAL"]["SOCKET_PATH"] and config["GENERAL"]["SOCKET_PATH"].startswith("udp:"):
+            (dst, dpt) = config["GENERAL"]["SOCKET_PATH"].strip("udp:").split(":")
+            if ipaddress.ip_address(dst).is_global:
+                raise ValueError("UDP socket destination IP is publically routable, security risk, bailing!")
+
+            # Cast destination port to integer (we'll need to do so later anyways...)
+            dpt = int(dpt)
+
+            if dpt < 1024 or dpt > 65536:
+                raise ValueError("UDP socket destination port out of bounds")
         else:
             # Empty socket path given, check for valid ASNDB FQDN...
             if not is_valid_domain(config["GENERAL"]["ASNDB_FQDN"]):
@@ -377,9 +393,19 @@ RESOLVER.lifetime = config.getint("GENERAL", "RESOLVER_TIMEOUT")
 
 LOGIT.info("Running ASNDB response tests...")
 if config["GENERAL"]["SOCKET_PATH"]:
-    # Establish connection to ASN lookup socket...
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(config["GENERAL"]["SOCKET_PATH"])
+    # Determine Socket type (at the time of writing, Unix and UDP sockets are supported...)
+    if config["GENERAL"]["SOCKET_PATH"].startswith("unix:/"):
+        # Establish connection to ASN lookup socket...
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.connect(config["GENERAL"]["SOCKET_PATH"])
+    elif config["GENERAL"]["SOCKET_PATH"].startswith("udp:"):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.connect((dst, dpt))
+    else:
+        LOGIT.error("Failed to connect to asn-lookup [.py] socket: protocol of '%s' is not implemented",
+                    config["GENERAL"]["SOCKET_PATH"])
+        print("BH")
+        sys.exit(127)
 
     LOGIT.debug("Connected to asn-lookup [.py] socket, running response tests...")
 
